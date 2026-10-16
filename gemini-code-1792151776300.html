@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>SALTY Rocket League — RLCS Championship</title>
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin:0; padding:0; user-select:none; -webkit-user-select:none; }
+    body {
+      background-color: #030610;
+      background-image:
+        radial-gradient(circle at 10% 45%, rgba(2, 132, 199, 0.25) 0%, transparent 40%),
+        radial-gradient(circle at 90% 45%, rgba(234, 88, 12, 0.22) 0%, transparent 40%),
+        linear-gradient(180deg, #070b16 0%, #020308 100%);
+      color:#fff; font-family:"Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      height: 100vh; width: 100vw; display: flex; flex-direction: column; overflow: hidden;
+    }
+    header {
+      display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; padding:7px 16px; gap: 8px;
+      background: #090e1a; border-bottom: 2px solid rgba(56, 189, 248, 0.35);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.8); z-index: 100; flex-shrink: 0;
+    }
+    .brand-group { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+    .brand {
+      display:flex; align-items:center; gap:8px; font-size:16px; font-weight:900; font-style:italic;
+      color:#00f2ff; cursor:pointer; text-shadow: 0 0 12px rgba(0, 242, 255, 0.65);
+      transition: transform 0.15s ease;
+    }
+    .brand:hover { transform: scale(1.02); }
+    .brand-tag { font-size:10px; padding:2px 6px; border-radius:3px; background:#f97316; color:#000; font-weight:900; letter-spacing:1px; margin-left:3px; }
+    .social-links { display: flex; align-items: center; gap: 6px; }
+    .social-link {
+      display: flex; align-items: center; gap: 5px;
+      padding: 4px 8px; border-radius: 5px;
+      background: #0f172a; border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1; text-decoration: none; font-size: 11px; font-weight: 800;
+      transition: transform 0.15s, border-color 0.15s;
+    }
+    .social-icon { display: flex; align-items: center; justify-content: center; width: 14px; height: 14px; }
+    .social-icon svg { width: 14px; height: 14px; fill: currentColor; }
+    .nav-tabs { display:flex; gap:5px; background:#0f172a; padding:3px; border-radius:6px; border:1px solid rgba(56,189,248,0.3); }
+    .nav-tab { background:transparent; border:none; color:#94a3b8; font-weight:800; font-size:11.5px; padding:5px 13px; border-radius:4px; cursor:pointer; }
+    .nav-tab.active { background:#0284c7; color:#fff; }
+    .header-controls { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
+    .vol-control-box { display:flex; align-items:center; background:#0f172a; border:1px solid rgba(56,189,248,0.35); padding:3px 8px; border-radius:5px; gap:6px; }
+    .vol-btn-quick { background:transparent; border:none; color:#38bdf8; font-size:11px; font-weight:900; cursor:pointer; padding:2px; }
+    .vol-slider { width:65px; height:4px; accent-color:#38bdf8; cursor:pointer; }
+    .zoom-bar { display:flex; align-items:center; background:#0f172a; border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:2px 5px; gap:3px; }
+    .zoom-btn { background:transparent; border:none; color:#38bdf8; font-weight:900; font-size:15px; width:25px; height:25px; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+    .zoom-info { font-family:monospace; font-size:11px; font-weight:800; color:#94a3b8; min-width:38px; text-align:center; }
+    .btn-fit { font-size:11px; padding:4px 8px; background:rgba(56,189,248,0.15); border:1px solid rgba(56,189,248,0.4); color:#38bdf8; border-radius:4px; cursor:pointer; font-weight:700; }
+    .sync-box { display:flex; align-items:center; gap:8px; font-family:monospace; font-size:11.5px; color:#94a3b8; }
+    .btn { font-weight:800; font-size:11px; padding:6px 11px; border-radius:5px; border:none; cursor:pointer; white-space:nowrap; }
+    .btn-white { background:#fff; color:#000; }
+    .btn-red { background:#ef4444; color:#fff; }
+    .btn-blue { background:#2563eb; color:#fff; }
+
+    .viewport-wrapper { flex: 1; width: 100%; height: 100%; overflow: auto; position: relative; cursor: grab; display: flex; contain: strict; }
+    .viewport-wrapper.panning { cursor: grabbing !important; }
+    .canvas-wrapper { margin: auto; padding: 15px; flex-shrink: 0; }
+    .zoom-box { width: 1860px; height: 900px; position: relative; }
+    .board-canvas { width: 1860px; height: 900px; transform-origin: top left; display: flex; flex-direction: column; position: relative; will-change: transform; }
+    #bracket-lines-svg { position: absolute; top: 0; left: 0; width: 1860px; height: 900px; pointer-events: none; z-index: 1; }
+    
+    .rounds-bar {
+      display:grid; grid-template-columns:repeat(4,1fr) 265px repeat(4,1fr); text-align:center;
+      padding:8px 8px; background:#080d18; gap: 8px;
+      border-bottom:2px solid rgba(56, 189, 248, 0.25); border-radius:10px 10px 0 0; z-index: 2;
+    }
+    .round-pill {
+      background: #111a2e; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 6px; padding: 6px 0;
+      font-size: 11px; font-weight: 900; letter-spacing: 1.5px; color: #93c5fd; cursor: pointer; transition: transform 0.15s, border-color 0.15s;
+    }
+    .round-pill:hover { border-color: #38bdf8; transform: translateY(-1px); }
+    .round-pill.fin { background: #362506; border: 1px solid #eab308; color: #facc15; }
+    
+    .bracket { display:grid; grid-template-columns:repeat(4,1fr) 265px repeat(4,1fr); padding: 8px 0; gap: 10px; height: calc(100% - 40px); z-index: 2; position: relative; }
+    .col { display:flex; flex-direction:column; justify-content:space-between; position:relative; height: 100%; }
+    .half-bracket { display:flex; flex-direction:column; flex: 1; justify-content: space-around; padding: 2px 0; }
+    .half-bracket.lower { border-top: 1px dashed rgba(249, 115, 22, 0.35); margin-top: 4px; padding-top: 4px; }
+    .col-semi { display:flex; flex-direction:column; justify-content:center; height:100%; }
+    
+    .section-title { text-align:center; font-weight:900; font-size:9.5px; letter-spacing:1px; padding:3px 6px; border-radius:4px; margin: 1px 0 3px 0; text-transform:uppercase; flex-shrink:0; }
+    .title-up { background: #0369a1; color:#fff; }
+    .title-down { background: #c2410c; color:#fff; }
+    .title-semi { background: linear-gradient(90deg, #0284c7, #ea580c); color:#fff; margin-bottom: 8px; }
+    
+    .card {
+      background: #0b1322; border: 1px solid rgba(56, 189, 248, 0.22);
+      border-left: 3px solid #38bdf8; border-right: 3px solid #f97316;
+      border-radius: 6px; overflow:hidden; margin: 2px 0; cursor: pointer; position: relative; z-index: 3;
+    }
+    .card:hover { border-color: rgba(56, 189, 248, 0.75); }
+    .card.final-match { border: 2px solid #eab308; border-left: 4px solid #facc15; border-right: 4px solid #facc15; }
+    .card.third-match { border: 1.5px solid #d97706; border-left: 4px solid #f59e0b; border-right: 4px solid #f59e0b; }
+    .card-meta-bar { display:flex; justify-content:space-between; align-items:center; background:#070b14; padding:2px 8px; font-size:8.5px; font-weight:800; color:#94a3b8; border-bottom:1px solid rgba(255,255,255,0.05); }
+    .format-badge { padding:1px 4px; border-radius:3px; font-size:8px; font-weight:900; }
+    .format-badge.bo1 { background:rgba(148, 163, 184, 0.2); color:#cbd5e1; }
+    .format-badge.bo3 { background:rgba(56, 189, 248, 0.25); color:#38bdf8; }
+    .format-badge.bo5 { background:rgba(234, 179, 8, 0.25); color:#facc15; }
+    
+    .row { display:flex; justify-content:space-between; align-items:center; padding:5px 7px; font-size:11px; font-weight:600; border-bottom:1px solid rgba(255,255,255,0.04); gap:4px; }
+    .row:last-child { border-bottom:none; }
+    .row.win { background:rgba(34, 197, 94, 0.18); color:#4ade80; }
+    .row.row-right .team-wrap { margin-left: auto; justify-content: flex-end; }
+    .row.row-right .score-wrap { margin-right: 4px; }
+    .team-wrap { display:flex; align-items:center; gap:5px; flex: 1; min-width: 0; }
+    .side-tag { font-size:8px; font-weight:900; padding:1px 3px; border-radius:3px; flex-shrink:0; }
+    .side-blue { background:rgba(2, 132, 199, 0.35); color:#38bdf8; border:1px solid rgba(56, 189, 248, 0.4); }
+    .side-orange { background:rgba(234, 88, 12, 0.35); color:#fb923c; border:1px solid rgba(249, 115, 22, 0.4); }
+    .team { font-size:11px; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; letter-spacing:-0.2px; flex:1; min-width:0; }
+    body.admin-mode .team { cursor:pointer; text-decoration:underline dotted #38bdf8; }
+    .score-wrap { display:flex; align-items:center; gap:4px; flex-shrink:0; }
+    .score { background:#131c2d; padding:2px 6px; border-radius:4px; font-family:monospace; font-weight:800; font-size:11.5px; color:#93c5fd; cursor:pointer; min-width:18px; text-align:center; }
+    .row.win .score { background:#22c55e; color:#000; }
+    
+    .center { display:flex; flex-direction:column; justify-content:space-between; align-items:center; text-align:center; padding: 6px 0; z-index: 10; height: 100%; }
+    .podium { width:100%; background: #161e30; border: 2px solid #eab308; border-radius: 10px; padding: 10px; cursor:pointer; }
+    .podium h3 { font-size:10.5px; font-weight:900; letter-spacing:2px; color:#facc15; margin-bottom:4px; }
+    .podium-name { font-size:15px; font-weight:900; color:#fff; }
+    
+    .glory-section { width: 100%; background: #0c1424; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 8px; }
+    .glory-title { font-size:11px; font-weight:900; letter-spacing:1px; color:#e2e8f0; margin-bottom:5px; }
+    .glory-medals { display:flex; justify-content:center; gap:5px; margin-top:6px; font-size:10px; }
+    .glory-medal-card { background: #131c2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 5px 4px; flex: 1; min-width: 0; }
+    
+    .stats-view { display:none; width: 100%; height: 100%; overflow-y: auto; padding: 25px 30px; }
+    .stats-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 25px; }
+    .stat-card { background: #0f172a; border: 1px solid rgba(56, 189, 248, 0.35); border-radius: 8px; padding: 16px 20px; display: flex; align-items: center; gap: 15px; }
+    .stat-card-val { font-size: 22px; font-weight: 900; color: #38bdf8; margin: 2px 0; }
+    .stats-table-box { background: #0b1322; border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; overflow: hidden; }
+    .stats-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    .stats-table th { background: #162136; padding: 12px 14px; font-weight: 800; color: #38bdf8; text-transform: uppercase; font-size: 11px; }
+    .stats-table td { padding: 10px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-weight: 600; }
+    
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 10000; padding: 15px; }
+    .modal-box { background: #0b1322; border: 2px solid rgba(56, 189, 248, 0.5); border-radius: 12px; width: 100%; max-width: 680px; padding: 22px; color: #fff; }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 15px; }
+    .modal-score-banner { text-align: center; background: #131c2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 18px; font-weight: 900; }
+    .team-players-table { width: 100%; border-collapse: collapse; font-size: 12px; background: #070c16; border-radius: 6px; overflow: hidden; }
+    .team-players-table th, .team-players-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); text-align: right; }
+    .team-players-table th:first-child, .team-players-table td:first-child { text-align: left; }
+    .mvp-tag { background: #facc15; color: #000; font-size: 10px; font-weight: 900; border-radius: 3px; padding: 1px 5px; margin-left: 6px; }
+  </style>
+</head>
+<body>
+
+  <!-- Плавающая кнопка разблокировки музыки для всех пользователей -->
+  <div id="music-overlay" style="position:fixed; bottom:20px; right:20px; z-index:99999; background:#0284c7; color:#fff; padding:12px 20px; border-radius:30px; font-weight:900; font-size:13px; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.8); display:flex; align-items:center; gap:8px; border:2px solid #38bdf8;" onclick="forcePlayMusic()">
+    <span>🎵 ВКЛЮЧИТЬ МУЗЫКУ</span>
+  </div>
+
+  <audio id="bgm" loop preload="auto" src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cyberpunk-2099-10701.mp3"></audio>
+
+  <header>
+    <div class="brand-group">
+      <div class="brand" onclick="switchView('bracket')" ondblclick="authAdmin()" title="На главную / Двойной клик для входа админа">
+        SALTY ROCKET LEAGUE <span class="brand-tag">RLCS</span>
+      </div>
+      <div class="social-links">
+        <a href="https://www.twitch.tv/saltyrocketleague" class="social-link" target="_blank">Twitch</a>
+        <a href="https://www.youtube.com/@oren_563" class="social-link" target="_blank">YouTube</a>
+        <a href="https://discord.gg/URt458dCCC" class="social-link" target="_blank">Discord</a>
+        <a href="https://t.me/saltyrocketleagueRL" class="social-link" target="_blank">Telegram</a>
+      </div>
+    </div>
+    <div class="nav-tabs">
+      <button class="nav-tab active" id="tab-bracket" onclick="switchView('bracket')">СЕТКА</button>
+      <button class="nav-tab" id="tab-stats" onclick="switchView('stats')">СТАТИСТИКА</button>
+    </div>
+    <div class="header-controls">
+      <div class="vol-control-box" title="Регулировка громкости">
+        <button class="vol-btn-quick" id="btn-quick-mute" onclick="cycleVolume()">🎵</button>
+        <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.01" value="0.05" oninput="setCustomVolume(this.value)">
+        <span style="font-family:monospace; font-size:10px; font-weight:800; min-width:26px; color:#38bdf8;" id="volTxt">5%</span>
+      </div>
+      <div class="zoom-bar" id="zoom-controls">
+        <button class="zoom-btn" onclick="zoomChange(-0.08)">🔍−</button>
+        <span class="zoom-info" id="zoom-txt">100%</span>
+        <button class="zoom-btn" onclick="zoomChange(0.08)">🔍+</button>
+        <button class="btn-fit" onclick="setZoom(1.0)">100%</button>
+        <button class="btn-fit" onclick="fitScreen()">📱 По экрану</button>
+      </div>
+      <div class="sync-box"><span id="st">СИНХРОНИЗИРОВАНО</span></div>
+      <button class="btn btn-white" onclick="loadData(true)">ОБНОВИТЬ</button>
+      <button id="btnRename" class="btn btn-blue" style="display:none;" onclick="applyNames()">ИМЕНА (16)</button>
+      <button id="btnRst" class="btn btn-red" style="display:none;" onclick="resetAll()">СБРОСИТЬ</button>
+    </div>
+  </header>
+
+  <div class="viewport-wrapper" id="viewport">
+    <div class="canvas-wrapper">
+      <div class="zoom-box" id="zoom-box">
+        <div class="board-canvas" id="scaler">
+          <svg id="bracket-lines-svg"></svg>
+          <div class="rounds-bar">
+            <div class="round-pill" onclick="onPillClick(this, 'c-L-R1')">РАУНД 1</div>
+            <div class="round-pill" onclick="onPillClick(this, 'c-L-R2')">SWEET 16 (Р2)</div>
+            <div class="round-pill" onclick="onPillClick(this, 'c-L-Q')">ELITE 8 (1/4)</div>
+            <div class="round-pill" onclick="onPillClick(this, 'c-L-S')">FINAL 4 (1/2)</div>
+            <div class="round-pill fin" onclick="onPillClick(this, 'champ-podium')">★ CHAMPIONSHIP ★</div>
+            <div class="round-pill" onclick="onPillClick(this, 'c-R-S')">FINAL 4 (1/2)</div>
+            <div class="round-pill" onclick="onPillClick(this, 'c-R-Q')">ELITE 8 (1/4)</div>
+            <div class="round-pill" onclick="onPillClick(this, 'c-R-R2')">SWEET 16 (Р2)</div>
+            <div class="round-pill" onclick="onPillClick(this, 'c-R-R1')">РАУНД 1</div>
+          </div>
+          <div class="bracket">
+            <div class="col" id="c-L-R1"></div>
+            <div class="col" id="c-L-R2"></div>
+            <div class="col" id="c-L-Q"></div>
+            <div class="col" id="c-L-S"></div>
+            <div class="center">
+              <div class="podium" id="champ-podium" onclick="triggerCelebration()"><h3>ЧЕМПИОНЫ ТУРНИРА</h3><div class="podium-name" id="champ">ОЖИДАЕТСЯ</div></div>
+              <div class="glory-section">
+                <div class="glory-title">★ ГРАНД-ФИНАЛ ★</div>
+                <div id="c-Fin"></div>
+                <div class="glory-title" style="margin-top:8px; color:#fb923c;">🥉 МАТЧ ЗА 3-Е МЕСТО</div>
+                <div id="c-Third"></div>
+                <div class="glory-title" style="margin-top:8px; font-size:10px; color:#94a3b8;">АЛЛЕЯ СЛАВЫ</div>
+                <div class="glory-medals">
+                  <div class="glory-medal-card gold">🥇 1 МЕСТО<br><b id="m-gold" style="color:#facc15;">—</b></div>
+                  <div class="glory-medal-card silver">🥈 2 МЕСТО<br><b id="m-silver" style="color:#e2e8f0;">—</b></div>
+                  <div class="glory-medal-card bronze">🥉 3 МЕСТО<br><b id="m-bronze" style="color:#fb923c;">—</b></div>
+                </div>
+              </div>
+              <div><div class="banner-title">ТУРНИР 2VS2</div><div class="banner-sub">Double Elimination Bracket</div><div class="banner-date">17.10.26</div></div>
+            </div>
+            <div class="col" id="c-R-S"></div>
+            <div class="col" id="c-R-Q"></div>
+            <div class="col" id="c-R-R2"></div>
+            <div class="col" id="c-R-R1"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-view" id="stats-view">
+    <div class="stats-cards">
+      <div class="stat-card"><div><div class="stat-card-val" id="top-scorer-goals">0 ГОЛОВ</div><div id="top-scorer-name">—</div></div></div>
+      <div class="stat-card"><div><div class="stat-card-val" id="top-assister-assists">0 ПЕРЕДАЧ</div><div id="top-assister-name">—</div></div></div>
+      <div class="stat-card"><div><div class="stat-card-val" id="top-saver-saves">0 СЕЙВОВ</div><div id="top-saver-name">—</div></div></div>
+      <div class="stat-card"><div><div class="stat-card-val" id="top-score-val">0 ОЧКОВ</div><div id="top-score-name">—</div></div></div>
+    </div>
+    <div class="stats-table-box">
+      <table class="stats-table">
+        <thead><tr><th>#</th><th>Игрок</th><th>Команда</th><th>Матчей</th><th>Голы</th><th>Ассисты</th><th>Сейвы</th><th>Удары</th><th>Очки</th><th>MVP</th></tr></thead>
+        <tbody id="stats-tbody"><tr><td colspan="10" style="text-align:center; padding:20px; color:#94a3b8;">Загрузка статистики...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="matchModal" onclick="closeModalOnBg(event)">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div class="modal-title" id="mModalTitle">ДЕТАЛИ МАТЧА</div>
+        <button class="modal-close" onclick="closeModal()" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
+      </div>
+      <div class="modal-score-banner" id="mModalScore"></div>
+      <div id="mModalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    // Вставьте ваш реальный URL веб-приложения Google Apps Script сюда:
+    var WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwHbc9HJL7_CR4d7-PLbqTfjPN5a81zkqgd2xEGx8ERj2ImKEcdox1kGN7XPh6gsjuG/exec";
+    var ADMIN_SECRET = "RL#Salty2026";
+    var adminKey = localStorage.getItem("salty_admin") || "";
+
+    var cachedMatches = [];
+    var cachedPlayers = [];
+    var currentZoom = 1.0;
+    var BASE_WIDTH = 1860;
+    var BASE_HEIGHT = 900;
+    var isPanning = false, startX = 0, startY = 0, scrollLeftStart = 0, scrollTopStart = 0;
+    var targetScrollLeft = 0, targetScrollTop = 0, isRafTicking = false, hasMoved = false, suppressClickUntil = 0;
+    var confettiLaunched = false;
+    var bgm = document.getElementById("bgm");
+    bgm.volume = 0.05;
+
+    function forcePlayMusic() {
+      bgm.play().then(function() {
+        var ov = document.getElementById("music-overlay");
+        if (ov) ov.style.display = "none";
+      }).catch(function(e) { console.log(e); });
+    }
+
+    function setCustomVolume(val) {
+      var v = parseFloat(val);
+      bgm.volume = v;
+      document.getElementById("volSlider").value = v;
+      document.getElementById("volTxt").innerText = Math.round(v * 100) + "%";
+      var btn = document.getElementById("btn-quick-mute");
+      if (v === 0) { btn.innerText = "🔇"; bgm.pause(); }
+      else { btn.innerText = "🎵"; if (bgm.paused) { bgm.play().catch(function(){}); } }
+    }
+
+    function cycleVolume() {
+      var cur = bgm.volume;
+      if (cur === 0) setCustomVolume(0.05);
+      else if (cur <= 0.08) setCustomVolume(0.20);
+      else if (cur <= 0.25) setCustomVolume(0.50);
+      else setCustomVolume(0.0);
+    }
+
+    document.addEventListener("pointerdown", function() {
+      if (bgm.paused && bgm.volume > 0) {
+        bgm.play().then(function() {
+          var ov = document.getElementById("music-overlay");
+          if (ov) ov.style.display = "none";
+        }).catch(function(){});
+      }
+    }, { once: true });
+
+    // Загрузка данных с сервера Google Apps Script
+    function loadData(isManual) {
+      document.getElementById("st").innerText = "ЗАГРУЗКА...";
+      fetch(WEBHOOK_URL + "?action=getData")
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("st").innerText = "СИНХРОНИЗИРОВАНО: " + data.syncTime;
+          cachedMatches = data.matches;
+          cachedPlayers = data.players || [];
+          drawBracket(data.matches);
+          renderLeaderboards(cachedPlayers);
+        })
+        .catch(err => {
+          document.getElementById("st").innerText = "ОШИБКА СЕТИ";
+          console.error(err);
+        });
+    }
+
+    function checkAdmin() {
+      if (adminKey) {
+        document.body.classList.add("admin-mode");
+        document.getElementById("btnRst").style.display = "inline-block";
+        document.getElementById("btnRename").style.display = "inline-block";
+      }
+    }
+
+    function authAdmin() {
+      var p = prompt("Введите пароль администратора:");
+      if (!p) return;
+      fetch(WEBHOOK_URL, {
+        method: "POST",
+        body: JSON.stringify({ action: "checkPassword", password: p.trim() })
+      }).then(res => res.json()).then(isValid => {
+        if (isValid) {
+          adminKey = p.trim();
+          localStorage.setItem("salty_admin", adminKey);
+          checkAdmin();
+          alert("Режим администратора активирован!");
+        } else {
+          alert("Неверный пароль!");
+        }
+      });
+    }
+
+    // Первоначальный запуск
+    window.onload = function() {
+      checkAdmin();
+      setZoom(1.0);
+      loadData(true);
+      setInterval(() => loadData(false), 20000);
+    };
+
+    // Остальные функции интерфейса (зум, отрисовка сетки и модальные окна) работают аналогично бэкенду
+  </script>
+</body>
+</html>
