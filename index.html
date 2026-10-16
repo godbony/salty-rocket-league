@@ -36,15 +36,10 @@
       color: #cbd5e1; text-decoration: none; font-size: 11px; font-weight: 800;
       transition: transform 0.15s, border-color 0.15s;
     }
-    .social-icon { display: flex; align-items: center; justify-content: center; width: 14px; height: 14px; }
-    .social-icon svg { width: 14px; height: 14px; fill: currentColor; }
     .nav-tabs { display:flex; gap:5px; background:#0f172a; padding:3px; border-radius:6px; border:1px solid rgba(56,189,248,0.3); }
     .nav-tab { background:transparent; border:none; color:#94a3b8; font-weight:800; font-size:11.5px; padding:5px 13px; border-radius:4px; cursor:pointer; }
     .nav-tab.active { background:#0284c7; color:#fff; }
     .header-controls { display:flex; flex-wrap:wrap; align-items:center; gap:7px; }
-    .vol-control-box { display:flex; align-items:center; background:#0f172a; border:1px solid rgba(56,189,248,0.35); padding:3px 8px; border-radius:5px; gap:6px; }
-    .vol-btn-quick { background:transparent; border:none; color:#38bdf8; font-size:11px; font-weight:900; cursor:pointer; padding:2px; }
-    .vol-slider { width:65px; height:4px; accent-color:#38bdf8; cursor:pointer; }
     .zoom-bar { display:flex; align-items:center; background:#0f172a; border:1px solid rgba(56,189,248,0.3); border-radius:6px; padding:2px 5px; gap:3px; }
     .zoom-btn { background:transparent; border:none; color:#38bdf8; font-weight:900; font-size:15px; width:25px; height:25px; border-radius:4px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
     .zoom-info { font-family:monospace; font-size:11px; font-weight:800; color:#94a3b8; min-width:38px; text-align:center; }
@@ -132,24 +127,16 @@
     .stats-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
     .stats-table th { background: #162136; padding: 12px 14px; font-weight: 800; color: #38bdf8; text-transform: uppercase; font-size: 11px; }
     .stats-table td { padding: 10px 14px; border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-weight: 600; }
-    
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.85); display: none; align-items: center; justify-content: center; z-index: 10000; padding: 15px; }
-    .modal-box { background: #0b1322; border: 2px solid rgba(56, 189, 248, 0.5); border-radius: 12px; width: 100%; max-width: 680px; padding: 22px; color: #fff; }
-    .modal-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 12px; margin-bottom: 15px; }
-    .modal-score-banner { text-align: center; background: #131c2e; border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 12px; margin-bottom: 15px; font-size: 18px; font-weight: 900; }
-    .team-players-table { width: 100%; border-collapse: collapse; font-size: 12px; background: #070c16; border-radius: 6px; overflow: hidden; }
-    .team-players-table th, .team-players-table td { padding: 8px 10px; border-bottom: 1px solid rgba(255,255,255,0.04); text-align: right; }
-    .team-players-table th:first-child, .team-players-table td:first-child { text-align: left; }
-    .mvp-tag { background: #facc15; color: #000; font-size: 10px; font-weight: 900; border-radius: 3px; padding: 1px 5px; margin-left: 6px; }
   </style>
 </head>
 <body>
 
+  <!-- Надежный аудиоплеер с кнопкой включения -->
   <div id="music-overlay" style="position:fixed; bottom:20px; right:20px; z-index:99999; background:#0284c7; color:#fff; padding:12px 20px; border-radius:30px; font-weight:900; font-size:13px; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.8); display:flex; align-items:center; gap:8px; border:2px solid #38bdf8;" onclick="forcePlayMusic()">
     <span>🎵 ВКЛЮЧИТЬ МУЗЫКУ</span>
   </div>
 
-  <audio id="bgm" loop preload="auto" src="https://cdn.pixabay.com/download/audio/2022/05/27/audio_1808fbf07a.mp3?filename=cyberpunk-2099-10701.mp3"></audio>
+  <audio id="bgm" loop preload="auto" src="https://commondatastorage.googleapis.com/codeskulptor-assets/ricercar.ogg"></audio>
 
   <header>
     <div class="brand-group">
@@ -168,11 +155,6 @@
       <button class="nav-tab" id="tab-stats" onclick="switchView('stats')">СТАТИСТИКА</button>
     </div>
     <div class="header-controls">
-      <div class="vol-control-box" title="Регулировка громкости">
-        <button class="vol-btn-quick" id="btn-quick-mute" onclick="cycleVolume()">🎵</button>
-        <input type="range" class="vol-slider" id="volSlider" min="0" max="1" step="0.01" value="0.05" oninput="setCustomVolume(this.value)">
-        <span style="font-family:monospace; font-size:10px; font-weight:800; min-width:26px; color:#38bdf8;" id="volTxt">5%</span>
-      </div>
       <div class="zoom-bar" id="zoom-controls">
         <button class="zoom-btn" onclick="zoomChange(-0.08)">🔍−</button>
         <span class="zoom-info" id="zoom-txt">100%</span>
@@ -249,32 +231,13 @@
     </div>
   </div>
 
-  <div class="modal-overlay" id="matchModal" onclick="closeModalOnBg(event)">
-    <div class="modal-box">
-      <div class="modal-header">
-        <div class="modal-title" id="mModalTitle">ДЕТАЛИ МАТЧА</div>
-        <button class="modal-close" onclick="closeModal()" style="background:none; border:none; color:#fff; font-size:18px; cursor:pointer;">✕</button>
-      </div>
-      <div class="modal-score-banner" id="mModalScore"></div>
-      <div id="mModalBody"></div>
-    </div>
-  </div>
-
   <script>
     var WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwHbc9HJL7_CR4d7-PLbqTfjPN5a81zkqgd2xEGx8ERj2ImKEcdox1kGN7XPh6gsjuG/exec";
     var ADMIN_SECRET = "RL#Salty2026";
     var adminKey = localStorage.getItem("salty_admin") || "";
 
-    var cachedMatches = [];
-    var cachedPlayers = [];
-    var currentZoom = 1.0;
-    var BASE_WIDTH = 1860;
-    var BASE_HEIGHT = 900;
-    var isPanning = false, startX = 0, startY = 0, scrollLeftStart = 0, scrollTopStart = 0;
-    var targetScrollLeft = 0, targetScrollTop = 0, isRafTicking = false, hasMoved = false, suppressClickUntil = 0;
-    var confettiLaunched = false;
     var bgm = document.getElementById("bgm");
-    bgm.volume = 0.05;
+    bgm.volume = 0.2;
 
     function forcePlayMusic() {
       bgm.play().then(function() {
@@ -283,43 +246,14 @@
       }).catch(function(e) { console.log(e); });
     }
 
-    function setCustomVolume(val) {
-      var v = parseFloat(val);
-      bgm.volume = v;
-      document.getElementById("volSlider").value = v;
-      document.getElementById("volTxt").innerText = Math.round(v * 100) + "%";
-      var btn = document.getElementById("btn-quick-mute");
-      if (v === 0) { btn.innerText = "🔇"; bgm.pause(); }
-      else { btn.innerText = "🎵"; if (bgm.paused) { bgm.play().catch(function(){}); } }
-    }
-
-    function cycleVolume() {
-      var cur = bgm.volume;
-      if (cur === 0) setCustomVolume(0.05);
-      else if (cur <= 0.08) setCustomVolume(0.20);
-      else if (cur <= 0.25) setCustomVolume(0.50);
-      else setCustomVolume(0.0);
-    }
-
-    document.addEventListener("pointerdown", function() {
-      if (bgm.paused && bgm.volume > 0) {
-        bgm.play().then(function() {
-          var ov = document.getElementById("music-overlay");
-          if (ov) ov.style.display = "none";
-        }).catch(function(){});
-      }
-    }, { once: true });
-
     function loadData(isManual) {
       document.getElementById("st").innerText = "ЗАГРУЗКА...";
       fetch(WEBHOOK_URL + "?action=getData")
         .then(res => res.json())
         .then(data => {
           document.getElementById("st").innerText = "СИНХРОНИЗИРОВАНО: " + data.syncTime;
-          cachedMatches = data.matches;
-          cachedPlayers = data.players || [];
           drawBracket(data.matches);
-          renderLeaderboards(cachedPlayers);
+          renderLeaderboards(data.players || []);
         })
         .catch(err => {
           document.getElementById("st").innerText = "ОШИБКА СЕТИ";
@@ -330,8 +264,8 @@
     function checkAdmin() {
       if (adminKey) {
         document.body.classList.add("admin-mode");
-        document.getElementById("btnRst").style.display = "inline-block";
-        document.getElementById("btnRename").style.display = "inline-block";
+        var bR = document.getElementById("btnRst"); if(bR) bR.style.display = "inline-block";
+        var bN = document.getElementById("btnRename"); if(bN) bN.style.display = "inline-block";
       }
     }
 
@@ -353,7 +287,6 @@
       });
     }
 
-    // Полный набор функций отрисовки сетки и карточек матчей
     var winTree = {
       1: [9, 1],  2: [9, 2],  3: [10, 1], 4: [10, 2],
       5: [11, 1], 6: [11, 2], 7: [12, 1], 8: [12, 2],
@@ -363,14 +296,12 @@
       21: [25, 1], 22: [25, 2], 23: [26, 1], 24: [26, 2],
       25: [27, 2], 26: [28, 2], 27: [30, 1], 28: [30, 2]
     };
-    var lossTree = {
-      1: [15, 1], 2: [15, 2], 3: [16, 1], 4: [16, 2],
-      5: [18, 1], 6: [18, 2], 7: [19, 1], 8: [19, 2],
-      9: [17, 1], 10: [17, 2], 11: [20, 1], 12: [20, 2],
-      13: [22, 2], 14: [24, 2], 27: [29, 1], 28: [29, 2]
-    };
 
-    function esc(t) { if (!t) return "—"; return String(t).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+    function esc(t) { if (!t) return "—"; return String(t).replace(/"/g, '&quot;').replace(./g, '&#39;'); }
+    var currentZoom = 1.0;
+    var BASE_WIDTH = 1860;
+    var BASE_HEIGHT = 900;
+
     function setZoom(val) {
       currentZoom = Math.max(0.80, Math.min(2.0, Math.round(val * 100) / 100));
       document.getElementById("scaler").style.transform = "scale(" + currentZoom + ")";
@@ -405,7 +336,7 @@
       var w1 = m.winner && m.winner === m.team1;
       var w2 = m.winner && m.winner === m.team2;
       var rCls = isRight ? "row row-right" : "row";
-      var t1Safe = esc(m.team1); var t2Safe = esc(m.team2);
+      var t1Safe = String(m.team1 || "—"); var t2Safe = String(m.team2 || "—");
       var s1 = (m.score1 !== undefined && m.score1 !== null && m.score1 !== "") ? m.score1 : "-";
       var s2 = (m.score2 !== undefined && m.score2 !== null && m.score2 !== "") ? m.score2 : "-";
       var fmt = getMatchFormatInfo(m.id);
@@ -425,7 +356,6 @@
 
     function drawBracket(m) {
       if (!m || !m.length) return;
-      cachedMatches = m;
       document.getElementById("c-L-R1").innerHTML =
         "<div class='half-bracket'><div class='section-title title-up'>▲ Верхняя сетка</div>" + m.slice(0, 4).map(x => card(x, "", false)).join("") + "</div>" +
         "<div class='half-bracket lower'><div class='section-title title-down'>▼ Нижняя сетка</div>" + m.slice(14, 17).map(x => card(x, "", false)).join("") + "</div>";
@@ -455,7 +385,7 @@
       var html = "";
       for (var i = 0; i < players.length; i++) {
         var p = players[i];
-        html += "<tr><td>" + (i+1) + "</td><td>" + esc(p.name) + "</td><td>" + esc(p.team) + "</td><td>" + p.matches + "</td><td>" + p.goals + "</td><td>" + p.assists + "</td><td>" + p.saves + "</td><td>" + p.shots + "</td><td>" + p.score + "</td><td>" + p.mvp + "</td></tr>";
+        html += "<tr><td>" + (i+1) + "</td><td>" + p.name + "</td><td>" + p.team + "</td><td>" + p.matches + "</td><td>" + p.goals + "</td><td>" + p.assists + "</td><td>" + p.saves + "</td><td>" + p.shots + "</td><td>" + p.score + "</td><td>" + p.mvp + "</td></tr>";
       }
       document.getElementById("stats-tbody").innerHTML = html;
     }
@@ -465,13 +395,12 @@
       var tabS = document.getElementById("tab-stats");
       var viewB = document.getElementById("viewport");
       var viewS = document.getElementById("stats-view");
-      var zCtrl = document.getElementById("zoom-controls");
       if (mode === "stats") {
         tabS.classList.add("active"); tabB.classList.remove("active");
-        viewB.style.display = "none"; viewS.style.display = "block"; zCtrl.style.display = "none";
+        viewB.style.display = "none"; viewS.style.display = "block";
       } else {
         tabB.classList.add("active"); tabS.classList.remove("active");
-        viewB.style.display = "flex"; viewS.style.display = "none"; zCtrl.style.display = "flex";
+        viewB.style.display = "flex"; viewS.style.display = "none";
       }
     }
 
