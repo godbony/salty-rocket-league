@@ -131,7 +131,6 @@
 </head>
 <body>
 
-  <!-- Надежный аудиоплеер с кнопкой включения -->
   <div id="music-overlay" style="position:fixed; bottom:20px; right:20px; z-index:99999; background:#0284c7; color:#fff; padding:12px 20px; border-radius:30px; font-weight:900; font-size:13px; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.8); display:flex; align-items:center; gap:8px; border:2px solid #38bdf8;" onclick="forcePlayMusic()">
     <span>🎵 ВКЛЮЧИТЬ МУЗЫКУ</span>
   </div>
@@ -297,7 +296,7 @@
       25: [27, 2], 26: [28, 2], 27: [30, 1], 28: [30, 2]
     };
 
-    function esc(t) { if (!t) return "—"; return String(t).replace(/"/g, '&quot;').replace(./g, '&#39;'); }
+    function esc(t) { if (!t) return "—"; return String(t).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
     var currentZoom = 1.0;
     var BASE_WIDTH = 1860;
     var BASE_HEIGHT = 900;
