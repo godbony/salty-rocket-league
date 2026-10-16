@@ -145,7 +145,6 @@
 </head>
 <body>
 
-  <!-- Плавающая кнопка разблокировки музыки для всех пользователей -->
   <div id="music-overlay" style="position:fixed; bottom:20px; right:20px; z-index:99999; background:#0284c7; color:#fff; padding:12px 20px; border-radius:30px; font-weight:900; font-size:13px; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.8); display:flex; align-items:center; gap:8px; border:2px solid #38bdf8;" onclick="forcePlayMusic()">
     <span>🎵 ВКЛЮЧИТЬ МУЗЫКУ</span>
   </div>
@@ -262,7 +261,6 @@
   </div>
 
   <script>
-    // Вставьте ваш реальный URL веб-приложения Google Apps Script сюда:
     var WEBHOOK_URL = "https://script.google.com/macros/s/AKfycbwHbc9HJL7_CR4d7-PLbqTfjPN5a81zkqgd2xEGx8ERj2ImKEcdox1kGN7XPh6gsjuG/exec";
     var ADMIN_SECRET = "RL#Salty2026";
     var adminKey = localStorage.getItem("salty_admin") || "";
@@ -312,7 +310,6 @@
       }
     }, { once: true });
 
-    // Загрузка данных с сервера Google Apps Script
     function loadData(isManual) {
       document.getElementById("st").innerText = "ЗАГРУЗКА...";
       fetch(WEBHOOK_URL + "?action=getData")
@@ -356,15 +353,134 @@
       });
     }
 
-    // Первоначальный запуск
+    // Полный набор функций отрисовки сетки и карточек матчей
+    var winTree = {
+      1: [9, 1],  2: [9, 2],  3: [10, 1], 4: [10, 2],
+      5: [11, 1], 6: [11, 2], 7: [12, 1], 8: [12, 2],
+      9: [13, 1], 10: [13, 2], 11: [14, 1], 12: [14, 2],
+      13: [27, 1], 14: [28, 1], 15: [21, 1], 16: [21, 2],
+      17: [22, 1], 18: [23, 1], 19: [23, 2], 20: [24, 1],
+      21: [25, 1], 22: [25, 2], 23: [26, 1], 24: [26, 2],
+      25: [27, 2], 26: [28, 2], 27: [30, 1], 28: [30, 2]
+    };
+    var lossTree = {
+      1: [15, 1], 2: [15, 2], 3: [16, 1], 4: [16, 2],
+      5: [18, 1], 6: [18, 2], 7: [19, 1], 8: [19, 2],
+      9: [17, 1], 10: [17, 2], 11: [20, 1], 12: [20, 2],
+      13: [22, 2], 14: [24, 2], 27: [29, 1], 28: [29, 2]
+    };
+
+    function esc(t) { if (!t) return "—"; return String(t).replace(/"/g, '&quot;').replace(/'/g, '&#39;'); }
+    function setZoom(val) {
+      currentZoom = Math.max(0.80, Math.min(2.0, Math.round(val * 100) / 100));
+      document.getElementById("scaler").style.transform = "scale(" + currentZoom + ")";
+      document.getElementById("zoom-box").style.width = Math.round(BASE_WIDTH * currentZoom) + "px";
+      document.getElementById("zoom-box").style.height = Math.round(BASE_HEIGHT * currentZoom) + "px";
+      document.getElementById("zoom-txt").innerText = Math.round(currentZoom * 100) + "%";
+    }
+    function zoomChange(delta) { setZoom(currentZoom + delta); }
+    function fitScreen() {
+      var availW = document.getElementById("viewport").clientWidth - 20;
+      setZoom(Math.max(0.80, Math.min(1.0, availW / BASE_WIDTH)));
+    }
+
+    function getMatchFormatInfo(mId) {
+      if (mId <= 26) return { tag: "BO1", maxWins: 1, cls: "bo1" };
+      if (mId <= 29) return { tag: "BO3", maxWins: 2, cls: "bo3" };
+      return { tag: "BO5", maxWins: 3, cls: "bo5" };
+    }
+
+    function renderSeriesDots(score, maxWins) {
+      if (maxWins <= 1) return "";
+      var wins = parseInt(score, 10) || 0;
+      var html = "<div class='dots-wrap'>";
+      for (var i = 0; i < maxWins; i++) {
+        html += "<span class='s-dot " + (i < wins ? "fill" : "") + "'></span>";
+      }
+      return html + "</div>";
+    }
+
+    function card(m, extraClass, isRight, customLabel) {
+      if (!m) return "<div class='card'></div>";
+      var w1 = m.winner && m.winner === m.team1;
+      var w2 = m.winner && m.winner === m.team2;
+      var rCls = isRight ? "row row-right" : "row";
+      var t1Safe = esc(m.team1); var t2Safe = esc(m.team2);
+      var s1 = (m.score1 !== undefined && m.score1 !== null && m.score1 !== "") ? m.score1 : "-";
+      var s2 = (m.score2 !== undefined && m.score2 !== null && m.score2 !== "") ? m.score2 : "-";
+      var fmt = getMatchFormatInfo(m.id);
+      var mTitle = customLabel ? customLabel : ("МАТЧ #" + m.id);
+      var metaBar = "<div class='card-meta-bar'><span>" + mTitle + "</span><span class='format-badge " + fmt.cls + "'>" + fmt.tag + "</span></div>";
+      
+      var row1 = isRight
+        ? "<div class='" + rCls + " " + (w1?"win":"") + "'><div class='score-wrap'>" + renderSeriesDots(s1, fmt.maxWins) + "<span class='score'>" + s1 + "</span></div><div class='team-wrap'><span class='team'>" + t1Safe + "</span><span class='side-tag side-blue'>BLU</span></div></div>"
+        : "<div class='" + rCls + " " + (w1?"win":"") + "'><div class='team-wrap'><span class='side-tag side-blue'>BLU</span><span class='team'>" + t1Safe + "</span></div><div class='score-wrap'><span class='score'>" + s1 + "</span>" + renderSeriesDots(s1, fmt.maxWins) + "</div></div>";
+      
+      var row2 = isRight
+        ? "<div class='" + rCls + " " + (w2?"win":"") + "'><div class='score-wrap'>" + renderSeriesDots(s2, fmt.maxWins) + "<span class='score'>" + s2 + "</span></div><div class='team-wrap'><span class='team'>" + t2Safe + "</span><span class='side-tag side-orange'>ORG</span></div></div>"
+        : "<div class='" + rCls + " " + (w2?"win":"") + "'><div class='team-wrap'><span class='side-tag side-orange'>ORG</span><span class='team'>" + t2Safe + "</span></div><div class='score-wrap'><span class='score'>" + s2 + "</span>" + renderSeriesDots(s2, fmt.maxWins) + "</div></div>";
+
+      return "<div class='card " + (extraClass || "") + "' id='card-m-" + m.id + "'>" + metaBar + row1 + row2 + "</div>";
+    }
+
+    function drawBracket(m) {
+      if (!m || !m.length) return;
+      cachedMatches = m;
+      document.getElementById("c-L-R1").innerHTML =
+        "<div class='half-bracket'><div class='section-title title-up'>▲ Верхняя сетка</div>" + m.slice(0, 4).map(x => card(x, "", false)).join("") + "</div>" +
+        "<div class='half-bracket lower'><div class='section-title title-down'>▼ Нижняя сетка</div>" + m.slice(14, 17).map(x => card(x, "", false)).join("") + "</div>";
+      document.getElementById("c-L-R2").innerHTML =
+        "<div class='half-bracket'><div class='section-title title-up'>▲ Sweet 16 (Верх)</div>" + m.slice(8, 10).map(x => card(x, "", false)).join("") + "</div>" +
+        "<div class='half-bracket lower'><div class='section-title title-down'>▼ Sweet 16 (Низ)</div>" + m.slice(20, 22).map(x => card(x, "", false)).join("") + "</div>";
+      document.getElementById("c-L-Q").innerHTML =
+        "<div class='half-bracket'><div class='section-title title-up'>▲ Финал Верхней</div>" + card(m[12], "", false) + "</div>" +
+        "<div class='half-bracket lower'><div class='section-title title-down'>▼ Финал Нижней</div>" + card(m[24], "", false) + "</div>";
+      document.getElementById("c-L-S").innerHTML = "<div class='col-semi'><div class='section-title title-semi'>★ ПОЛУФИНАЛ 1</div>" + card(m[26], "", false, "ПОЛУФИНАЛ #27") + "</div>";
+      document.getElementById("c-R-S").innerHTML = "<div class='col-semi'><div class='section-title title-semi'>★ ПОЛУФИНАЛ 2</div>" + card(m[27], "", true, "ПОЛУФИНАЛ #28") + "</div>";
+      document.getElementById("c-R-Q").innerHTML =
+        "<div class='half-bracket'><div class='section-title title-up'>▲ Финал Верхней</div>" + card(m[13], "", true) + "</div>" +
+        "<div class='half-bracket lower'><div class='section-title title-down'>▼ Финал Нижней</div>" + card(m[25], "", true) + "</div>";
+      document.getElementById("c-R-R2").innerHTML =
+        "<div class='half-bracket'><div class='section-title title-up'>▲ Sweet 16 (Верх)</div>" + m.slice(10, 12).map(x => card(x, "", true)).join("") + "</div>" +
+        "<div class='half-bracket lower'><div class='section-title title-down'>▼ Sweet 16 (Низ)</div>" + m.slice(22, 24).map(x => card(x, "", true)).join("") + "</div>";
+      document.getElementById("c-R-R1").innerHTML =
+        "<div class='half-bracket'><div class='section-title title-up'>▲ Верхняя сетка</div>" + m.slice(4, 8).map(x => card(x, "", true)).join("") + "</div>" +
+        "<div class='half-bracket lower'><div class='section-title title-down'>▼ Нижняя сетка</div>" + m.slice(17, 20).map(x => card(x, "", true)).join("") + "</div>";
+      if (m[28]) document.getElementById("c-Third").innerHTML = card(m[28], "third-match", false, "МАТЧ ЗА 3 МЕСТО #29");
+      if (m[29]) document.getElementById("c-Fin").innerHTML = card(m[29], "final-match", false, "ГРАНД-ФИНАЛ #30");
+    }
+
+    function renderLeaderboards(players) {
+      if (!players || !players.length) return;
+      var html = "";
+      for (var i = 0; i < players.length; i++) {
+        var p = players[i];
+        html += "<tr><td>" + (i+1) + "</td><td>" + esc(p.name) + "</td><td>" + esc(p.team) + "</td><td>" + p.matches + "</td><td>" + p.goals + "</td><td>" + p.assists + "</td><td>" + p.saves + "</td><td>" + p.shots + "</td><td>" + p.score + "</td><td>" + p.mvp + "</td></tr>";
+      }
+      document.getElementById("stats-tbody").innerHTML = html;
+    }
+
+    function switchView(mode) {
+      var tabB = document.getElementById("tab-bracket");
+      var tabS = document.getElementById("tab-stats");
+      var viewB = document.getElementById("viewport");
+      var viewS = document.getElementById("stats-view");
+      var zCtrl = document.getElementById("zoom-controls");
+      if (mode === "stats") {
+        tabS.classList.add("active"); tabB.classList.remove("active");
+        viewB.style.display = "none"; viewS.style.display = "block"; zCtrl.style.display = "none";
+      } else {
+        tabB.classList.add("active"); tabS.classList.remove("active");
+        viewB.style.display = "flex"; viewS.style.display = "none"; zCtrl.style.display = "flex";
+      }
+    }
+
     window.onload = function() {
       checkAdmin();
       setZoom(1.0);
       loadData(true);
       setInterval(() => loadData(false), 20000);
     };
-
-    // Остальные функции интерфейса (зум, отрисовка сетки и модальные окна) работают аналогично бэкенду
   </script>
 </body>
 </html>
