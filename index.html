@@ -145,6 +145,7 @@
 </head>
 <body>
 
+  <!-- Гарантированная кнопка включения музыки -->
   <div id="music-overlay" style="position:fixed; bottom:20px; right:20px; z-index:99999; background:#0284c7; color:#fff; padding:12px 20px; border-radius:30px; font-weight:900; font-size:13px; cursor:pointer; box-shadow:0 4px 20px rgba(0,0,0,0.8); display:flex; align-items:center; gap:8px; border:2px solid #38bdf8;" onclick="forcePlayMusic()">
     <span>🎵 ВКЛЮЧИТЬ МУЗЫКУ</span>
   </div>
@@ -333,13 +334,12 @@
       return "<span style='font-weight:800;'>" + safeName + "</span><span class='trn-group'>" + linksHtml + "</span>";
     }
 
-    // Клик по счету (Админ меняет счет)
     function onScoreClick(el, evt) {
       if(evt) evt.stopPropagation();
       var matchId = parseInt(el.getAttribute("data-match"), 10);
       if(!adminKey) { openMatchDetails(matchId); return; }
       var curM = cachedMatches[matchId - 1];
-      var res = prompt("Матч #" + matchId + ". Введите счёт (например: 3:1) или пусто для сброса:", curM.score1 + ":" + curM.score2);
+      var res = prompt("Матч #" + matchId + ". Введите счёт (например: 3:1) или пусто для сброса:", (curM.score1 !== "-" ? curM.score1 : "0") + ":" + (curM.score2 !== "-" ? curM.score2 : "0"));
       if(res === null) return;
       var parts = res.trim().split(/[^0-9]+/);
       if(parts.length < 2) { alert("Введите в формате 3:1"); return; }
@@ -354,7 +354,6 @@
       });
     }
 
-    // Клик по команде (Админ меняет название)
     function onTeamClick(el, evt) {
       if(evt) evt.stopPropagation();
       if(!adminKey) return;
